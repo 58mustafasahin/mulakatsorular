@@ -77,3 +77,49 @@ public class Student : Person, IDoSomething, IStudy
     public int SchoolNumber { get; set; }
 }
 ```
+
+## AsSplitQuery() nedir?
+
+Normal sorgulardan include ile dahil edilen tablolar join ile birleştirilirken, AsSplitQuery() Linq methodu ile sorguya dahil edilen tablolar ayrı olarak getirilip birleştirilerek sorgunun hızlı çalışmasına sağlar.
+
+Normal sorgu
+
+```c#
+var blogs = dbContext.Blogs
+    .Include(b => b.Posts)
+    .ThenInclude(p => p.Comments)
+    .ToList();
+```
+
+Bahsi geçen blog tablosunda dahil edilen tablolar sql kısmında left join ile sorgu içerine dahil edilir.
+
+```sql
+SELECT [b].[Id], [b].[Name], [t].[Id], [t].[BlogId], [t].[Title], [t].[Id0], [t].[Content], [t].[PostId]
+FROM [Blogs] AS [b]
+LEFT JOIN [Posts] AS [p] ON [b].[Id] = [p].[BlogId]
+LEFT JOIN [Comment] AS [c] ON [p].[Id] = [c].[PostId]
+ORDER BY [b].[Id], [t].[Id]
+```
+
+Ayrılmış sorgu
+
+```c#
+var blogs = context.Blogs
+    .Include(blog => blog.Posts)
+    .AsSplitQuery()
+    .ToList();
+```
+
+Method eklendikten sonra ayrı ayrı yapılan sql sorguları üretir.
+
+```sql
+SELECT [b].[BlogId], [b].[OwnerId], [b].[Rating], [b].[Url]
+FROM [Blogs] AS [b]
+ORDER BY [b].[BlogId]
+
+SELECT [p].[PostId], [p].[AuthorId], [p].[BlogId], [p].[Content], [p].[Rating], [p].[Title], [b].[BlogId]
+FROM [Blogs] AS [b]
+INNER JOIN [Posts] AS [p] ON [b].[BlogId] = [p].[BlogId]
+ORDER BY [b].[BlogId]
+```
+
