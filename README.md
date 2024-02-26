@@ -1,4 +1,3 @@
-# mulakatsorular
 # .Net Mülakat Soruları
 
 Mülakatlarda karşılaşılan bazı soruları içermektedir.
