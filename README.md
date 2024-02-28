@@ -123,3 +123,47 @@ INNER JOIN [Posts] AS [p] ON [b].[BlogId] = [p].[BlogId]
 ORDER BY [b].[BlogId]
 ```
 
+## Lazy Loading, Eager Loading ve Explicit Loading kavramları nedir?
+
+**Lazy Loading :** Nesne üzerinden ne zaman ilişkili bir alana erişilmek istenirse, o zaman veritabanına yeni sorgu atılarak ilişkili veriler getirilir.
+
+_Lazy loading with proxies :_ Microsoft.EntityFrameworkCore.Proxies paketi yüklenerek ayarlamaların aşağıdaki gibi eklenmesiyle datalar ihtiyaç olduğu zaman yeni bir sorgu atılarak ilişkili veriler getirilir. İlişkisi verilen nesnelerde `virtual` işareti eklenerek EF Core bu özelliklere ilk erişimde otomatik olarak veritabanından ilgili verileri yükleyecektir.
+
+```c#
+// configuration içerisinde
+protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    => optionsBuilder
+        .UseLazyLoadingProxies()
+        .UseSqlServer(myConnectionString);
+
+// ya da DbContext kullanımında
+.AddDbContext<BloggingContext>(
+    b => b.UseLazyLoadingProxies()
+          .UseSqlServer(myConnectionString));
+```
+
+_Lazy loading without proxies :_ Microsoft.EntityFrameworkCore.Abstractions paketi yüklenmesiyle `ILazyLoader.Load` methodu kullanılarak veri çağırıldığında yükleme işlemi yapılır.
+
+**Eager Loading :** Linq içindeki Include() methodu kullanılarak sorgu çalıştırıldığında verilerin tümünü önceden yükleyip hafızada tutar.
+
+```c#
+var blogs = context.Blogs
+    .Include(blog => blog.Posts)
+    .ToList();
+```
+
+**Explicit Loading :** Ana nesnenin yüklenmesinden sonra, ilişkili nesnelerin ayrıca ve açıkça istenmesi durumunda yüklenmesini sağlar. Performansı optimize etmek ve gereksiz veri yüklenmesini önlemek için kullanılır.
+
+```c#
+ var blog = context.Blogs
+        .Single(b => b.BlogId == 1);
+
+    context.Entry(blog)
+        .Collection(b => b.Posts)
+        .Load();
+
+    context.Entry(blog)
+        .Reference(b => b.Owner)
+        .Load();
+```
+
